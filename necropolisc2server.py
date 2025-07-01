@@ -247,97 +247,6 @@ Comandos disponibles:
             pass
         print("[*] Servidor detenido.")
 
-class ClientHandler(threading.Thread):
-    def __init__(self, client_socket, addr, client_id):
-        super().__init__(daemon=True)
-        self.client_socket = client_socket
-        self.addr = addr
-        self.client_id = client_id
-        self.alive = True
-        self.lock = threading.Lock()
-        self.buffer = b""
-
-    def __str__(self):
-        return f"{self.addr[0]}:{self.addr[1]}"
-
-    def run(self):
-        try:
-            while self.alive:
-                try:
-                    data = self.client_socket.recv(4096)
-                    if not data:
-                        print(f"[-] Cliente {self.client_id} desconectado.")
-                        self.alive = False
-                        break
-                    with self.lock:
-                        self.buffer += data
-                    self.print_output()
-                except socket.timeout:
-                    continue
-                except Exception as e:
-                    print(f"[-] Error con cliente {self.client_id}: {e}")
-                    self.alive = False
-                    break
-        finally:
-            self.close()
-
-    def print_output(self):
-        try:
-            with self.lock:
-                text = self.buffer.decode(errors='ignore')
-                self.buffer = b""
-            if text.strip():
-                print(f"\n[Cliente {self.client_id}]:\n{text}")
-                # Reprint prompt only if this client is selected
-                # (Assuming access to server.selected_client would be handled externally)
-                print("necropolisc2> ", end="", flush=True)
-        except Exception:
-            with self.lock:
-                self.buffer = b""
-
-    def send(self, message):
-        try:
-            with self.lock:
-                self.client_socket.sendall(message.encode())
-        except Exception as e:
-            print(f"[-] Error enviando datos al cliente {self.client_id}: {e}")
-            self.alive = False
-            self.close()
-
-    def receive(self, timeout=1.5):
-        self.client_socket.settimeout(timeout)
-        total_data = b""
-        try:
-            while True:
-                data = self.client_socket.recv(4096)
-                if not data:
-                    self.alive = False
-                    break
-                total_data += data
-                if len(data) < 4096:
-                    break
-        except socket.timeout:
-            pass
-        except Exception as e:
-            print(f"[-] Error recibiendo datos de cliente {self.client_id}: {e}")
-            self.alive = False
-        try:
-            return total_data.decode(errors='ignore')
-        except Exception:
-            return ""
-
-    def close(self):
-        if self.alive:
-            self.alive = False
-            try:
-                self.client_socket.shutdown(socket.SHUT_RDWR)
-            except:
-                pass
-            try:
-                self.client_socket.close()
-            except:
-                pass
-            print(f"[-] Conexión con cliente {self.client_id} cerrada.")
 
 if __name__ == "__main__":
     import signal
@@ -362,4 +271,3 @@ if __name__ == "__main__":
         print(f"[!] Error crítico en el servidor: {e}")
         c2_server.shutdown()
         sys.exit(1)
-
