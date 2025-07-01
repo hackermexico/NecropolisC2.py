@@ -1,4 +1,4 @@
-# ☠️ NecroPolisC2
+# ☠️ NecroPolisC2 - NOTA: usar la versión LITE si no quieres problemas si quieres depurar haré una versión como más extensible que tendrá plugins pero si solo quieres usar la shell remota con las versiones lite de cliente y servidor se hace el asunto haré un video y lo subiré para que puedan entender como funciona de una manera más precisa.
 
 **NecroPolisC2** es un servidor de Comando y Control (C2) ligero, escrito en Python puro, enfocado en simplicidad, modularidad y control total de agentes conectados mediante una shell TCP interactiva. Diseñado para prácticas de Red Team, automatización de pentests y ambientes controlados de ciberseguridad.
 
